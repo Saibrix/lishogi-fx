@@ -32,3 +32,5 @@ Also left out: hit-stop, board shake, board zoom (they would move lishogi's boar
 ## Testing
 `node tools/fx_lishogi_test.mjs` (headless Edge, lishogi.org/analysis, plays 7g7f 3c3d Bx2b+, screenshots lfx_*.png in the scratchpad).
 Only the analysis board is used for tests (never real games).
+
+- tools/fx_lishogi_test.mjs: needs puppeteer-core (e.g. run it with the node_modules of another project, or npm i puppeteer-core here).

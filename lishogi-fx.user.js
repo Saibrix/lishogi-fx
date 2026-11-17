@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lishogi FX
 // @namespace    https://github.com/Saibrix/lishogi-fx
-// @version      0.4.0
+// @version      0.4.1
 // @description  Random capture effects on lishogi (cosmetic only: no sounds, no hints, never touches the game)
 // @match        https://lishogi.org/*
 // @grant        none
@@ -587,7 +587,7 @@
 	// ---- swing: the piece in the finger tilts a little, its tip trails behind the finger ----
 	// shogiground moves the dragged piece (piece.dragging in sg-board) with transform: translate(Xpx, Ypx) scale(f).
 	// We add a tilt around a point below its middle; an observer puts it back at once whenever shogiground rewrites the transform.
-	const SWING = { max: 13, gain: 0.02, dead: 140, pivot: '28%' }          // degrees at most, degrees per px/s, px/s that are ignored (a calm finger does not wiggle)
+	const SWING = { max: 24, gain: 0.042, dead: 70, pivot: '28%' }          // degrees at most, degrees per px/s, px/s that are ignored (a calm finger does not wiggle)
 	const SUFFIX = / translateY\(28%\).*$/
 	let sw = null
 	function swingApply(s) {
@@ -623,10 +623,10 @@
 		if (s.x === null) s.x = x
 		const raw = (x - s.x) / dt
 		s.x = x
-		s.v += (raw - s.v) * (1 - Math.exp(-dt * 14))          // smoothed speed
+		s.v += (raw - s.v) * (1 - Math.exp(-dt * 30))          // smoothed speed (quick to react)
 		const over = Math.max(0, Math.abs(s.v) - SWING.dead)
 		const target = -Math.sign(s.v) * Math.min(SWING.max, over * SWING.gain)
-		s.vel += (-(s.ang - target) * 320 - s.vel * 20) * dt          // a soft spring: swings a little past, then settles
+		s.vel += (-(s.ang - target) * 700 - s.vel * 30) * dt          // a soft spring: swings a little past, then settles
 		s.ang += s.vel * dt
 		swingApply(s)
 		s.raf = requestAnimationFrame(swingFrame)

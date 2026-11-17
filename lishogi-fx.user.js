@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lishogi FX
 // @namespace    https://github.com/Saibrix/lishogi-fx
-// @version      0.1.4
+// @version      0.2.0
 // @description  Random capture effects on lishogi (cosmetic only: no sounds, no hints, never touches the game)
 // @match        https://lishogi.org/*
 // @grant        none
@@ -71,7 +71,7 @@
 
 	// ---- the effects (from Hex Chaos; only those that leave the moving piece alone) ----
 	const LEAD = 0.1          // seconds the effect is brought forward (raise it if it still feels late)
-	const STYLES = ['classic', 'poof', 'flick', 'pixel', 'vortex', 'balloon', 'frost', 'confetti', 'abduct', 'zap']
+	const STYLES = ['classic', 'flick', 'vortex', 'balloon', 'frost', 'confetti', 'abduct', 'zap', 'inferno', 'midas', 'glitch', 'rocket', 'ghost']
 	function impact(p, sq, img, victimColor, moverColor, moverRole, dir) {
 		layer(); size()
 		const ts = sq * 0.58, col = SIDE[victimColor] || '#ffcf73', tcol = SIDE[moverColor] || '#ffffff'
@@ -80,10 +80,6 @@
 		const ground = (c, max, life) => rings.push({ x: p[0], y: p[1] + ts * 0.3, t: 0, col: c, max, life, flat: true })
 		let [dx, dy] = dir
 		switch (style) {
-			case 'poof':
-				V({ mode: 'fade', life: 0.35 })
-				for (let i = 0; i < 10; i++) particle(p, i % 2 ? '#c9ccd6' : '#ffffff', ts * 1.2, 0.6, ts * 0.13)
-				ground('#ffffff', ts * 1.2, 0.4); break
 			case 'flick': {
 				const sd = Math.random() < 0.5 ? -1 : 1
 				V({ vx: dx * ts * 2.4, vy: dy * ts * 2.4, vz: ts * 3, vr: sd * 6, life: 0.5 })
@@ -102,10 +98,6 @@
 				for (let i = 0; i < 16; i++) particle(p, col, ts * 4, 0.6, ts * 0.11, 2, ts * 9)
 				break
 			}
-			case 'pixel':
-				V({ mode: 'fade', life: 0.2 })
-				for (let i = 0; i < 30; i++) parts.push({ x: p[0] + rr(-0.45, 0.45) * ts, y: p[1] + rr(-0.55, 0.35) * ts, vx: rr(-1, 1) * ts * 1.6, vy: rr(-2.6, -0.6) * ts, life: rr(0.7, 1.2), max: 1.2, col: i % 4 === 0 ? '#ffffff' : col, s: ts * rr(0.07, 0.12), k: 2, g: -ts * 0.5, rot: 0, sp: 0 })
-				flashes.push({ x: p[0], y: p[1], t: 0, life: 0.2, r: ts * 0.9, col }); break
 			case 'vortex':
 				V({ mode: 'spiral', life: 0.9, x0: p[0], y0: p[1] })
 				for (let i = 0; i < 22; i++) { const an = rr(0, TAU), d = ts * rr(0.8, 1.6); parts.push({ x: p[0] + Math.cos(an) * d, y: p[1] + Math.sin(an) * d * 0.7, vx: -Math.sin(an) * ts * 3 - Math.cos(an) * ts * 1.6, vy: Math.cos(an) * ts * 2.1 - Math.sin(an) * ts * 1.1, life: rr(0.5, 0.9), max: 0.9, col: i % 3 ? '#b47cff' : '#ffffff', s: ts * 0.08, k: 0, g: 0, rot: 0, sp: 0 }) }
@@ -139,6 +131,43 @@
 				flashes.push({ x: p[0], y: p[1], t: 0, life: 0.35, r: ts * 1.8, col: '#9fe6ff' })
 				for (let i = 0; i < 16; i++) particle(p, i % 2 ? '#9fe6ff' : '#ffffff', ts * 3.6, 0.45, ts * 0.07, 1)
 				for (let i = 0; i < 14; i++) particle(p, '#2a2a33', ts * 0.8, 1.1, ts * 0.09, 2, -ts * 2.5)
+				break
+			case 'inferno':
+				V({ mode: 'burn', life: 1.0 })
+				flashes.push({ x: p[0], y: p[1], t: 0, life: 0.4, r: ts * 1.6, col: '#ff7a1a' }); ground('#ff7a1a', ts * 1.5, 0.7)
+				for (let i = 0; i < 26; i++) parts.push({ x: p[0] + rr(-0.35, 0.35) * ts, y: p[1] + rr(-0.1, 0.4) * ts, vx: rr(-0.3, 0.3) * ts, vy: -rr(1.2, 3.2) * ts, life: rr(0.5, 1.0), max: 1.0, col: i % 3 === 0 ? '#ffe08a' : i % 3 === 1 ? '#ff8a2a' : '#ff4a1a', s: ts * rr(0.07, 0.13), k: 0, g: -ts * 1.2, rot: 0, sp: 0 })
+				for (let i = 0; i < 10; i++) particle([p[0], p[1] + ts * 0.1], '#2a2a33', ts * 0.8, 1.2, ts * 0.08, 2, -ts * 3)
+				break
+			case 'midas':
+				V({ mode: 'gold', life: 0.9 })
+				flashes.push({ x: p[0], y: p[1], t: 0, life: 0.35, r: ts * 1.3, col: '#ffd24d' })
+				for (let i = 0; i < 8; i++) particle(p, '#fff3b0', ts * 1.0, 0.6, ts * 0.06)
+				setTimeout(() => {
+					for (let i = 0; i < 24; i++) parts.push({ x: p[0], y: p[1], vx: rr(-1, 1) * ts * 2.8, vy: -rr(2, 5.5) * ts, life: rr(0.8, 1.3), max: 1.3, col: i % 3 ? '#ffc933' : '#fff0a0', s: ts * rr(0.07, 0.12), k: 2, g: ts * 9, rot: rr(0, TAU), sp: rr(-12, 12) })
+					flashes.push({ x: p[0], y: p[1], t: 0, life: 0.3, r: ts * 1.3, col: '#ffe27a' }); kick()
+				}, 420)
+				break
+			case 'glitch':
+				V({ mode: 'glitch', life: 0.7 })
+				flashes.push({ x: p[0], y: p[1], t: 0, life: 0.2, r: ts * 1.0, col: '#38f5ff' })
+				for (let i = 0; i < 22; i++) parts.push({ x: p[0] + rr(-0.55, 0.55) * ts, y: p[1] + rr(-0.5, 0.5) * ts, vx: rr(-3, 3) * ts, vy: rr(-0.3, 0.3) * ts, life: rr(0.25, 0.6), max: 0.6, col: i % 2 ? '#38f5ff' : '#ff3ad0', s: ts * rr(0.05, 0.1), k: 2, g: 0, rot: 0, sp: 0 })
+				break
+			case 'rocket':
+				V({ mode: 'launch', life: 0.85 })
+				ground('#ffb347', ts * 1.3, 0.5)
+				flashes.push({ x: p[0], y: p[1], t: 0, life: 0.3, r: ts * 1.4, col: '#ffb347' })
+				for (let i = 0; i < 16; i++) parts.push({ x: p[0] + rr(-0.2, 0.2) * ts, y: p[1] + ts * 0.3, vx: rr(-0.8, 0.8) * ts, vy: rr(0.5, 2.5) * ts, life: rr(0.4, 0.8), max: 0.8, col: i % 2 ? '#ffd27a' : '#ff7a2a', s: ts * rr(0.07, 0.12), k: 0, g: 0, rot: 0, sp: 0 })
+				setTimeout(() => {
+					const top = [p[0], p[1] - ts * 5.2], cs = ['#ff4f7b', '#ffd24a', '#5aa8ff', '#6fdc8c', '#ffffff']
+					for (let i = 0; i < 30; i++) { const an = rr(0, TAU), sp = ts * rr(2, 4.6); parts.push({ x: top[0], y: top[1], vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, life: rr(0.6, 1.0), max: 1.0, col: cs[i % cs.length], s: ts * 0.09, k: 0, g: ts * 2, rot: 0, sp: 0 }) }
+					flashes.push({ x: top[0], y: top[1], t: 0, life: 0.4, r: ts * 2, col: '#ffe9a0' })
+					rings.push({ x: top[0], y: top[1], t: 0, col: '#ffe9a0', max: ts * 2.2, life: 0.6 }); kick()
+				}, 480)
+				break
+			case 'ghost':
+				V({ mode: 'ghost', life: 1.5 })
+				flashes.push({ x: p[0], y: p[1], t: 0, life: 0.4, r: ts * 1.2, col: '#cfe0ff' })
+				for (let i = 0; i < 10; i++) parts.push({ x: p[0] + rr(-0.4, 0.4) * ts, y: p[1] + rr(-0.2, 0.4) * ts, vx: rr(-0.3, 0.3) * ts, vy: -rr(0.6, 1.8) * ts, life: rr(0.8, 1.4), max: 1.4, col: '#dfe9ff', s: ts * rr(0.04, 0.08), k: 0, g: 0, rot: 0, sp: 0 })
 				break
 			default: {          // classic: knocked away, shockwave, sparks and a burst that fits the taking piece
 				const side = Math.random() < 0.5 ? -1 : 1
@@ -225,6 +254,60 @@
 				ctx.beginPath(); ctx.moveTo(v.x - ts * 0.22, v.y - ts * 7); ctx.lineTo(v.x + ts * 0.22, v.y - ts * 7); ctx.lineTo(v.x + ts * 0.8, v.y + sz * 0.5); ctx.lineTo(v.x - ts * 0.8, v.y + sz * 0.5); ctx.closePath(); ctx.fill()
 				const u = Math.max(0, (k - 0.12) / 0.88), up = ts * 5 * u * u
 				ctx.globalAlpha = 1; ctx.translate(v.x, v.y - up); ctx.rotate(u * 5); drawPiece(v.img, 0, 0, sz, Math.max(0, 1 - u * u))
+				break
+			}
+			case 'burn': {
+				const heat = Math.min(1, k / 0.35), fade = k < 0.55 ? 1 : Math.max(0, 1 - (k - 0.55) / 0.45)
+				ctx.translate(v.x + Math.sin(k * 60) * ts * 0.02, v.y - k * ts * 0.1); ctx.scale(1 - 0.2 * k, 1 - 0.3 * k)
+				const c = (a, b) => Math.round(a * 255 * (1 - heat) + b * 255 * heat)
+				tinted(v.img, sz, `rgb(${c(1, 0.12)},${c(0.5, 0.1)},${c(0.1, 0.08)})`, fade)
+				break
+			}
+			case 'gold': {
+				const br = 0.46
+				ctx.translate(v.x, v.y)
+				let al = 1
+				if (k >= br) { const u = (k - br) / (1 - br); al = Math.max(0, 1 - u * 3); ctx.scale(1 + u * 0.3, 1 + u * 0.3) }
+				tinted(v.img, sz, '#ffc933', al)
+				const sh = ((k * 2.2) % 1) * 2 - 1
+				ctx.globalAlpha = 0.65 * al; ctx.fillStyle = '#ffffff'
+				ctx.beginPath(); ctx.moveTo(sh * ts * 0.6 - ts * 0.08, -ts * 0.45); ctx.lineTo(sh * ts * 0.6 + ts * 0.08, -ts * 0.45); ctx.lineTo(sh * ts * 0.6 + ts * 0.02, ts * 0.45); ctx.lineTo(sh * ts * 0.6 - ts * 0.14, ts * 0.45); ctx.closePath(); ctx.fill()
+				break
+			}
+			case 'glitch': {
+				const flick = Math.sin(k * 90) > -0.2 || k < 0.3 ? 1 : 0, out = k > 0.8 ? Math.max(0, (1 - k) / 0.2) : 1
+				const seed = Math.floor(k * 16)
+				const rnd = (i) => { const s = Math.sin(seed * 12.9898 + i * 78.233) * 43758.5453; return s - Math.floor(s) }
+				ctx.translate(v.x, v.y)
+				for (const [gc, off] of [['#38f5ff', -1], ['#ff3ad0', 1]]) { ctx.save(); ctx.translate(off * ts * (0.08 + 0.12 * rnd(9)), 0); tinted(v.img, sz, gc, 0.45 * out * flick); ctx.restore() }
+				const n = 6
+				for (let i = 0; i < n; i++) {
+					ctx.save(); ctx.beginPath(); ctx.rect(-sz, -sz * 0.5 + (i / n) * sz, sz * 2, sz / n + 0.5); ctx.clip()
+					ctx.translate((rnd(i) - 0.5) * ts * 0.5 * Math.min(1, k * 3), 0)
+					drawPiece(v.img, 0, 0, sz, out * flick); ctx.restore()
+				}
+				break
+			}
+			case 'launch': {
+				const u = Math.min(1, k / 0.6), up = ts * 5.2 * u * u * u + ts * 0.3 * u
+				ctx.globalAlpha = k < 0.6 ? 1 : Math.max(0, 1 - (k - 0.6) / 0.15)
+				ctx.translate(v.x, v.y - up)
+				if (k < 0.62) {
+					const fl = ts * (0.5 + 0.6 * u) * (0.8 + 0.2 * Math.sin(k * 80)), gr = ctx.createLinearGradient(0, ts * 0.3, 0, ts * 0.3 + fl)
+					gr.addColorStop(0, 'rgba(255,240,170,0.95)'); gr.addColorStop(0.5, 'rgba(255,140,40,0.8)'); gr.addColorStop(1, 'rgba(255,60,20,0)')
+					ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(-ts * 0.22, ts * 0.3); ctx.lineTo(ts * 0.22, ts * 0.3); ctx.lineTo(0, ts * 0.3 + fl); ctx.closePath(); ctx.fill()
+				}
+				ctx.scale(1 - 0.25 * u, 1 + 0.5 * u); drawPiece(v.img, 0, 0, sz, 1)
+				break
+			}
+			case 'ghost': {
+				const up = ts * 2.2 * k, x = v.x + Math.sin(k * 11) * ts * 0.18 * (0.4 + k)
+				ctx.translate(x, v.y - up); ctx.rotate(Math.sin(k * 8) * 0.12); ctx.scale(1 - 0.1 * k, 1 + 0.18 * k)
+				const al = Math.max(0, (k < 0.15 ? 0.45 + k * 2 : 0.75) * (1 - Math.max(0, (k - 0.5) / 0.5)))
+				tinted(v.img, sz, '#b8d0ff', al)
+				ctx.fillStyle = '#10131f'; ctx.globalAlpha = al * 0.9
+				for (const ex of [-0.12, 0.12]) { ctx.beginPath(); ctx.ellipse(ex * ts, -ts * 0.08, ts * 0.045, ts * 0.075, 0, 0, TAU); ctx.fill() }
+				ctx.beginPath(); ctx.ellipse(0, ts * 0.1, ts * 0.05, ts * 0.07, 0, 0, TAU); ctx.fill()
 				break
 			}
 			case 'ash': ctx.translate(v.x, v.y); ctx.scale(1 - 0.25 * k, 1 - 0.25 * k); tinted(v.img, sz, '#2a2a33', 1 - k); break

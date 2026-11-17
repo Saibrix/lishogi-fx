@@ -25,7 +25,7 @@ READ THIS FIRST when the user wants changes to the lishogi script. Everything ne
 
 ## Effects
 Random from: classic (knock-away + burst by the taker: pawn stomp, lance strike, knight bounce, silver/bishop/horse slice, gold/rook/dragon ram, king royal),
-poof, flick, sink, splat, pixel, vortex, balloon, frost, confetti, abduct, zap (only the hit, no lightning from the mover).
+flick, vortex, balloon, frost, confetti, abduct, zap (only the hit, no lightning from the mover), inferno, midas, glitch, rocket, ghost (v0.2.0: poof and pixel removed on the user's wish; the old sink/splat cases are still in the code but not in STYLES).
 LEFT OUT on purpose (they move the taking piece their own way and would fight lishogi's animation): slash, pancake, meteor, train, zap's teleport.
 Also left out: hit-stop, board shake, board zoom (they would move lishogi's board).
 

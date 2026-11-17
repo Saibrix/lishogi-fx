@@ -1,7 +1,7 @@
-// ==UserScript==
+﻿// ==UserScript==
 // @name         Lishogi FX
 // @namespace    https://github.com/Saibrix/lishogi-fx
-// @version      0.3.0
+// @version      0.3.1
 // @description  Random capture effects on lishogi (cosmetic only: no sounds, no hints, never touches the game)
 // @match        https://lishogi.org/*
 // @grant        none
@@ -169,10 +169,12 @@
 				flashes.push({ x: p[0], y: p[1], t: 0, life: 0.4, r: ts * 1.2, col: '#cfe0ff' })
 				for (let i = 0; i < 10; i++) parts.push({ x: p[0] + rr(-0.4, 0.4) * ts, y: p[1] + rr(-0.2, 0.4) * ts, vx: rr(-0.3, 0.3) * ts, vy: -rr(0.6, 1.8) * ts, life: rr(0.8, 1.4), max: 1.4, col: '#dfe9ff', s: ts * rr(0.04, 0.08), k: 0, g: 0, rot: 0, sp: 0 })
 				break
-			case 'sakura':
-				V({ mode: 'fade', life: 0.3 })
-				flashes.push({ x: p[0], y: p[1], t: 0, life: 0.3, r: ts * 1.2, col: '#ffc4d8' })
-				for (let i = 0; i < 40; i++) parts.push({ x: p[0] + rr(-0.4, 0.4) * ts, y: p[1] + rr(-0.4, 0.3) * ts, vx: rr(-1, 1) * ts * 2.6, vy: rr(-3.2, -0.4) * ts, life: rr(1.1, 1.9), max: 1.9, col: i % 3 ? '#ffb7cf' : '#ffe3ec', s: ts * rr(0.06, 0.1), k: 2, g: ts * 1.6, rot: rr(0, TAU), sp: rr(-8, 8) })
+			case 'sakura':          // a storm of cherry blossoms
+				V({ mode: 'sakura', life: 2.0 })
+				flashes.push({ x: p[0], y: p[1], t: 0, life: 0.5, r: ts * 1.6, col: '#ffb2cb' })
+				rings.push({ x: p[0], y: p[1] + ts * 0.3, t: 0, col: '#ffc4d8', max: ts * 2.2, life: 0.9, flat: true })
+				rings.push({ x: p[0], y: p[1] + ts * 0.3, t: 0, col: '#ffffff', max: ts * 1.3, life: 0.6, flat: true })
+				for (let i = 0; i < 14; i++) parts.push({ x: p[0] + rr(-0.5, 0.5) * ts, y: p[1] + rr(-0.4, 0.4) * ts, vx: rr(-0.5, 0.5) * ts, vy: -rr(0.5, 1.6) * ts, life: rr(0.9, 1.6), max: 1.6, col: '#ffd9e6', s: ts * rr(0.04, 0.07), k: 0, g: 0, rot: 0, sp: 0 })
 				break
 			case 'bubble':
 				V({ mode: 'bubble', life: 1.3 })
@@ -183,11 +185,21 @@
 					rings.push({ x: q[0], y: q[1], t: 0, col: '#bfe6ff', max: ts * 1.3, life: 0.4 }); kick()
 				}, 1060)
 				break
-			case 'warp':
-				V({ mode: 'warp', life: 0.55 })
-				flashes.push({ x: p[0], y: p[1], t: 0, life: 0.35, r: ts * 1.5, col: '#7af7ff' })
-				ground('#7af7ff', ts * 1.5, 0.5)
-				for (let i = 0; i < 18; i++) parts.push({ x: p[0] + rr(-0.45, 0.45) * ts, y: p[1] + rr(-0.3, 0.4) * ts, vx: 0, vy: -rr(4, 9) * ts, life: rr(0.3, 0.55), max: 0.55, col: i % 3 ? '#7af7ff' : '#ffffff', s: ts * 0.06, k: 1, g: 0, rot: 0, sp: 0 })
+			case 'warp':          // a portal, a beam, a trail of afterimages and a burst at the top
+				V({ mode: 'warp', life: 0.8 })
+				flashes.push({ x: p[0], y: p[1], t: 0, life: 0.4, r: ts * 2, col: '#7af7ff' })
+				flashes.push({ x: p[0], y: p[1], t: 0, life: 0.3, r: ts * 1.3, col: '#ff5be6' })
+				rings.push({ x: p[0], y: p[1] + ts * 0.3, t: 0, col: '#7af7ff', max: ts * 2.4, life: 0.6, flat: true })
+				for (let i = 0; i < 34; i++) parts.push({ x: p[0] + rr(-0.5, 0.5) * ts, y: p[1] + rr(-0.3, 0.4) * ts, vx: 0, vy: -rr(5, 12) * ts, life: rr(0.3, 0.6), max: 0.6, col: i % 3 === 0 ? '#ff5be6' : i % 3 === 1 ? '#7af7ff' : '#ffffff', s: ts * 0.06, k: 1, g: 0, rot: 0, sp: 0 })
+				setTimeout(() => {
+					
+					const top = [p[0], p[1] - ts * 6.2]
+					flashes.push({ x: top[0], y: top[1], t: 0, life: 0.5, r: ts * 2.6, col: '#ffffff' })
+					rings.push({ x: top[0], y: top[1], t: 0, col: '#7af7ff', max: ts * 3, life: 0.6 })
+					rings.push({ x: top[0], y: top[1], t: 0, col: '#ff5be6', max: ts * 2, life: 0.45 })
+					for (let i = 0; i < 28; i++) { const an = rr(0, TAU), sp = ts * rr(3, 7); parts.push({ x: top[0], y: top[1], vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, life: rr(0.4, 0.8), max: 0.8, col: i % 2 ? '#7af7ff' : '#ff5be6', s: ts * 0.06, k: 1, g: 0, rot: 0, sp: 0 }); }
+					kick()
+				}, 420)
 				break
 			default: {          // classic: knocked away, shockwave, sparks and a burst that fits the taking piece
 				const side = Math.random() < 0.5 ? -1 : 1
@@ -343,11 +355,53 @@
 				}
 				break
 			}
-			case 'warp': {
-				const sx = Math.max(0.04, 1 - 1.9 * k), sy = 1 + 3.2 * k, w = ts * 0.2 * (1 - k), gr = ctx.createLinearGradient(0, v.y - ts * 7, 0, v.y + ts * 0.5)
-				gr.addColorStop(0, 'rgba(122,247,255,0)'); gr.addColorStop(0.7, 'rgba(200,255,255,0.8)'); gr.addColorStop(1, 'rgba(122,247,255,0)')
-				ctx.fillStyle = gr; ctx.fillRect(v.x - w, v.y - ts * 7, w * 2, ts * 7.5)
-				ctx.translate(v.x, v.y); ctx.scale(sx, sy); drawPiece(v.img, 0, 0, sz, 1 - k * k)
+			case 'sakura': {          // a storm of cherry blossoms spirals up around the piece, which turns pale pink and dissolves into petals
+				const dis = Math.max(0, Math.min(1, (k - 0.12) / 0.5)), ctr = [v.x, v.y - ts * 0.2 - ts * 0.8 * k]
+				ctx.save(); ctx.globalCompositeOperation = 'lighter'
+				const gl = ctx.createRadialGradient(ctr[0], ctr[1], 0, ctr[0], ctr[1], ts * (1 + 1.6 * k))
+				gl.addColorStop(0, 'rgba(255,170,205,' + (0.4 * (1 - k)) + ')'); gl.addColorStop(1, 'rgba(255,170,205,0)')
+				ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(ctr[0], ctr[1], ts * (1 + 1.6 * k), 0, TAU); ctx.fill(); ctx.restore()
+				ctx.save(); ctx.translate(v.x, v.y); ctx.rotate(Math.sin(k * 10) * 0.1 * dis); ctx.scale(1 - 0.15 * dis, 1 - 0.15 * dis)
+				tinted(v.img, sz, '#ff9fc0', 1 - dis)
+				ctx.restore()
+				for (let i = 0; i < 90; i++) {
+					const sd = i * 2.399, born = (i % 14) / 14 * 0.45, u = (k - born) / (1 - born)
+					if (u <= 0) continue
+					const ang = sd + u * (5 + (i % 4)), rad = ts * (0.15 + 1.5 * Math.pow(u, 0.7)) * (0.6 + 0.4 * ((i * 7) % 5) / 4)
+					const px = v.x + Math.cos(ang) * rad + u * ts * 1.8, py = v.y - ts * 0.1 - u * ts * 2.6 * (0.6 + 0.4 * ((i * 3) % 5) / 4) + Math.sin(ang) * rad * 0.35 + u * u * ts * 1.1
+					const s = ts * (0.2 + 0.12 * ((i * 5) % 4) / 3), fl = Math.cos(u * 9 + i)
+					ctx.save(); ctx.translate(px, py); ctx.rotate(ang * 0.7 + i); ctx.scale(1, 0.25 + 0.75 * Math.abs(fl))
+					ctx.globalAlpha = Math.min(1, u * 8) * Math.min(1, (1 - u) * 2.5)
+					ctx.fillStyle = i % 3 === 0 ? '#ffe9f1' : i % 3 === 1 ? '#ffb2cb' : '#ff8fb3'
+					ctx.beginPath(); ctx.moveTo(0, -s); ctx.quadraticCurveTo(s * 0.95, -s * 0.5, s * 0.15, s); ctx.lineTo(0, s * 0.72); ctx.lineTo(-s * 0.15, s); ctx.quadraticCurveTo(-s * 0.95, -s * 0.5, 0, -s); ctx.fill()
+					ctx.restore()
+				}
+				break
+			}
+			case 'warp': {          // a portal opens, the piece is squeezed into a beam and shot up in a trail of afterimages
+				const open = Math.min(1, k * 7) * (1 - Math.max(0, (k - 0.75) / 0.25)), u = Math.max(0, Math.min(1, (k - 0.12) / 0.5))
+				ctx.save(); ctx.globalCompositeOperation = 'lighter'
+				for (let r = 0; r < 3; r++) {
+					const rad = ts * (0.95 - r * 0.22) * open
+					if (rad <= 0.5) continue
+					ctx.setLineDash([ts * 0.22, ts * 0.13]); ctx.lineDashOffset = -k * ts * 7 * (r % 2 ? 1 : -1)
+					ctx.strokeStyle = r === 1 ? '#ff5be6' : '#7af7ff'; ctx.globalAlpha = 0.9 * open; ctx.lineWidth = Math.max(1.5, ts * 0.07)
+					ctx.beginPath(); ctx.ellipse(v.x, v.y + ts * 0.3, rad, rad * 0.45, 0, 0, TAU); ctx.stroke()
+				}
+				ctx.setLineDash([])
+				const bw = ts * 0.85 * (1 - 0.7 * u) * (k < 0.85 ? 1 : Math.max(0, (1 - k) / 0.15)), gr = ctx.createLinearGradient(0, v.y - ts * 10, 0, v.y + ts * 0.4)
+				gr.addColorStop(0, 'rgba(122,247,255,0)'); gr.addColorStop(0.65, 'rgba(170,250,255,0.7)'); gr.addColorStop(1, 'rgba(255,91,230,0.5)')
+				ctx.globalAlpha = Math.min(1, k * 8); ctx.fillStyle = gr; ctx.fillRect(v.x - bw, v.y - ts * 10, bw * 2, ts * 10.4)
+				ctx.globalAlpha = Math.min(1, k * 8) * 0.9; ctx.fillStyle = '#ffffff'; ctx.fillRect(v.x - bw * 0.18, v.y - ts * 10, bw * 0.36, ts * 10.4)
+				ctx.restore()
+				for (let i = 6; i >= 0; i--) {
+					const t = u - i * 0.055
+					if (t <= 0) continue
+					const up = ts * 9 * t * t, al = (i === 0 ? 1 : 0.5 * (1 - i / 7)) * (1 - t * t)
+					ctx.save(); ctx.translate(v.x, v.y - up); ctx.scale(Math.max(0.05, 1 - 1.7 * t), 1 + 4 * t)
+					drawPiece(v.img, 0, 0, sz, al)
+					ctx.restore()
+				}
 				break
 			}
 			case 'ash': ctx.translate(v.x, v.y); ctx.scale(1 - 0.25 * k, 1 - 0.25 * k); tinted(v.img, sz, '#2a2a33', 1 - k); break

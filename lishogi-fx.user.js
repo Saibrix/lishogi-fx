@@ -1,7 +1,7 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name         Lishogi FX
 // @namespace    https://github.com/Saibrix/lishogi-fx
-// @version      0.3.1
+// @version      0.3.2
 // @description  Random capture effects on lishogi (cosmetic only: no sounds, no hints, never touches the game)
 // @match        https://lishogi.org/*
 // @grant        none
@@ -138,31 +138,46 @@
 				for (let i = 0; i < 26; i++) parts.push({ x: p[0] + rr(-0.35, 0.35) * ts, y: p[1] + rr(-0.1, 0.4) * ts, vx: rr(-0.3, 0.3) * ts, vy: -rr(1.2, 3.2) * ts, life: rr(0.5, 1.0), max: 1.0, col: i % 3 === 0 ? '#ffe08a' : i % 3 === 1 ? '#ff8a2a' : '#ff4a1a', s: ts * rr(0.07, 0.13), k: 0, g: -ts * 1.2, rot: 0, sp: 0 })
 				for (let i = 0; i < 10; i++) particle([p[0], p[1] + ts * 0.1], '#2a2a33', ts * 0.8, 1.2, ts * 0.08, 2, -ts * 3)
 				break
-			case 'midas':
-				V({ mode: 'gold', life: 0.9 })
-				flashes.push({ x: p[0], y: p[1], t: 0, life: 0.35, r: ts * 1.3, col: '#ffd24d' })
-				for (let i = 0; i < 8; i++) particle(p, '#fff3b0', ts * 1.0, 0.6, ts * 0.06)
+			case 'midas':          // gold spreads, glints, coins everywhere
+				V({ mode: 'gold', life: 1.7 })
+				flashes.push({ x: p[0], y: p[1], t: 0, life: 0.5, r: ts * 1.5, col: '#ffd24d' })
+				rings.push({ x: p[0], y: p[1] + ts * 0.3, t: 0, col: '#ffd24d', max: ts * 1.5, life: 0.6, flat: true })
 				setTimeout(() => {
-					for (let i = 0; i < 24; i++) parts.push({ x: p[0], y: p[1], vx: rr(-1, 1) * ts * 2.8, vy: -rr(2, 5.5) * ts, life: rr(0.8, 1.3), max: 1.3, col: i % 3 ? '#ffc933' : '#fff0a0', s: ts * rr(0.07, 0.12), k: 2, g: ts * 9, rot: rr(0, TAU), sp: rr(-12, 12) })
-					flashes.push({ x: p[0], y: p[1], t: 0, life: 0.3, r: ts * 1.3, col: '#ffe27a' }); kick()
-				}, 420)
+					
+					flashes.push({ x: p[0], y: p[1], t: 0, life: 0.4, r: ts * 2.2, col: '#fff0a0' })
+					rings.push({ x: p[0], y: p[1] + ts * 0.2, t: 0, col: '#ffd24d', max: ts * 2.8, life: 0.6, flat: true })
+					rings.push({ x: p[0], y: p[1], t: 0, col: '#ffffff', max: ts * 1.6, life: 0.4 })
+					for (let i = 0; i < 26; i++) { const an = rr(0, TAU), sp = ts * rr(1.5, 5); parts.push({ x: p[0], y: p[1], vx: Math.cos(an) * sp, vy: Math.sin(an) * sp - ts * 1.5, life: rr(0.5, 1.1), max: 1.1, col: i % 2 ? '#ffe27a' : '#ffffff', s: ts * rr(0.04, 0.08), k: 0, g: ts * 4, rot: 0, sp: 0 }) }
+					
+					kick()
+				}, 935)
 				break
 			case 'glitch':
 				V({ mode: 'glitch', life: 0.7 })
 				flashes.push({ x: p[0], y: p[1], t: 0, life: 0.2, r: ts * 1.0, col: '#38f5ff' })
 				for (let i = 0; i < 22; i++) parts.push({ x: p[0] + rr(-0.55, 0.55) * ts, y: p[1] + rr(-0.5, 0.5) * ts, vx: rr(-3, 3) * ts, vy: rr(-0.3, 0.3) * ts, life: rr(0.25, 0.6), max: 0.6, col: i % 2 ? '#38f5ff' : '#ff3ad0', s: ts * rr(0.05, 0.1), k: 2, g: 0, rot: 0, sp: 0 })
 				break
-			case 'rocket':
-				V({ mode: 'launch', life: 0.85 })
-				ground('#ffb347', ts * 1.3, 0.5)
-				flashes.push({ x: p[0], y: p[1], t: 0, life: 0.3, r: ts * 1.4, col: '#ffb347' })
-				for (let i = 0; i < 16; i++) parts.push({ x: p[0] + rr(-0.2, 0.2) * ts, y: p[1] + ts * 0.3, vx: rr(-0.8, 0.8) * ts, vy: rr(0.5, 2.5) * ts, life: rr(0.4, 0.8), max: 0.8, col: i % 2 ? '#ffd27a' : '#ff7a2a', s: ts * rr(0.07, 0.12), k: 0, g: 0, rot: 0, sp: 0 })
+			case 'rocket':          // a toy rocket with a big firework
+				V({ mode: 'launch', life: 1.2 })
+				rings.push({ x: p[0], y: p[1] + ts * 0.3, t: 0, col: '#ffb347', max: ts * 1.4, life: 0.5, flat: true })
+				rings.push({ x: p[0], y: p[1] + ts * 0.3, t: 0, col: '#ffffff', max: ts * 2.2, life: 0.8, flat: true })
 				setTimeout(() => {
-					const top = [p[0], p[1] - ts * 5.2], cs = ['#ff4f7b', '#ffd24a', '#5aa8ff', '#6fdc8c', '#ffffff']
-					for (let i = 0; i < 30; i++) { const an = rr(0, TAU), sp = ts * rr(2, 4.6); parts.push({ x: top[0], y: top[1], vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, life: rr(0.6, 1.0), max: 1.0, col: cs[i % cs.length], s: ts * 0.09, k: 0, g: ts * 2, rot: 0, sp: 0 }) }
-					flashes.push({ x: top[0], y: top[1], t: 0, life: 0.4, r: ts * 2, col: '#ffe9a0' })
-					rings.push({ x: top[0], y: top[1], t: 0, col: '#ffe9a0', max: ts * 2.2, life: 0.6 }); kick()
-				}, 480)
+					
+					flashes.push({ x: p[0], y: p[1], t: 0, life: 0.4, r: ts * 2.2, col: '#ffb347' })
+					for (let i = 0; i < 24; i++) parts.push({ x: p[0] + rr(-0.3, 0.3) * ts, y: p[1] + ts * 0.3, vx: rr(-1.6, 1.6) * ts, vy: rr(0.5, 3) * ts, life: rr(0.5, 0.9), max: 0.9, col: i % 2 ? '#ffd27a' : '#ff7a2a', s: ts * rr(0.08, 0.14), k: 0, g: 0, rot: 0, sp: 0 })
+					kick()
+				}, 170)
+				const burst = (cx, cy, n, sz, delay) => setTimeout(() => {
+					
+					const cs = ['#ff4f7b', '#ffd24a', '#5aa8ff', '#6fdc8c', '#ffffff', '#b46cff']
+					flashes.push({ x: cx, y: cy, t: 0, life: 0.45, r: ts * 2.4 * sz, col: '#ffe9a0' })
+					rings.push({ x: cx, y: cy, t: 0, col: '#ffe9a0', max: ts * 3 * sz, life: 0.7 })
+					rings.push({ x: cx, y: cy, t: 0, col: '#ff7ad9', max: ts * 1.8 * sz, life: 0.5 })
+					for (let i = 0; i < n; i++) { const an = rr(0, TAU), sp = ts * rr(2.5, 6.5) * sz, c = cs[i % cs.length]; parts.push({ x: cx, y: cy, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, life: rr(0.7, 1.2), max: 1.2, col: c, s: ts * 0.08, k: 1, g: ts * 2.5, rot: 0, sp: 0 }); parts.push({ x: cx, y: cy, vx: Math.cos(an) * sp * 0.6, vy: Math.sin(an) * sp * 0.6, life: rr(0.8, 1.4), max: 1.4, col: c, s: ts * 0.08, k: 0, g: ts * 3, rot: 0, sp: 0 }) }
+					
+					kick()
+				}, delay)
+				burst(p[0], p[1] - ts * 5.8, 36, 1, 760); burst(p[0] - ts * 1.6, p[1] - ts * 4.8, 18, 0.55, 960); burst(p[0] + ts * 1.7, p[1] - ts * 6.4, 18, 0.55, 1100)
 				break
 			case 'ghost':
 				V({ mode: 'ghost', life: 1.5 })
@@ -295,15 +310,41 @@
 				tinted(v.img, sz, `rgb(${c(1, 0.12)},${c(0.5, 0.1)},${c(0.1, 0.08)})`, fade)
 				break
 			}
-			case 'gold': {
-				const br = 0.46
-				ctx.translate(v.x, v.y)
-				let al = 1
-				if (k >= br) { const u = (k - br) / (1 - br); al = Math.max(0, 1 - u * 3); ctx.scale(1 + u * 0.3, 1 + u * 0.3) }
-				tinted(v.img, sz, '#ffc933', al)
-				const sh = ((k * 2.2) % 1) * 2 - 1
-				ctx.globalAlpha = 0.65 * al; ctx.fillStyle = '#ffffff'
-				ctx.beginPath(); ctx.moveTo(sh * ts * 0.6 - ts * 0.08, -ts * 0.45); ctx.lineTo(sh * ts * 0.6 + ts * 0.08, -ts * 0.45); ctx.lineTo(sh * ts * 0.6 + ts * 0.02, ts * 0.45); ctx.lineTo(sh * ts * 0.6 - ts * 0.14, ts * 0.45); ctx.closePath(); ctx.fill()
+			case 'gold': {          // gold spreads up the piece, glints, then it bursts into spinning coins that bounce
+				const br = 0.55, g = Math.min(1, k / 0.3), T = (k - br) * v.life
+				if (k < br) {
+					ctx.save(); ctx.translate(v.x + (k > 0.3 ? Math.sin(k * 90) * ts * 0.02 : 0), v.y)
+					drawPiece(v.img, 0, 0, sz, 1)
+					ctx.save(); ctx.beginPath(); ctx.rect(-ts, ts * 0.6 - g * ts * 1.2, ts * 2, ts * 2); ctx.clip()
+					tinted(v.img, sz, '#ffc933', 1)
+					ctx.restore()
+					if (k > 0.3) { const sh = ((k - 0.3) / 0.25) * 2 - 1; ctx.globalAlpha = 0.7; ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(sh * ts * 0.7 - ts * 0.08, -ts * 0.5); ctx.lineTo(sh * ts * 0.7 + ts * 0.1, -ts * 0.5); ctx.lineTo(sh * ts * 0.7 - ts * 0.02, ts * 0.5); ctx.lineTo(sh * ts * 0.7 - ts * 0.2, ts * 0.5); ctx.closePath(); ctx.fill() }
+					ctx.restore()
+					ctx.save(); ctx.globalCompositeOperation = 'lighter'
+					const gl = ctx.createRadialGradient(v.x, v.y, 0, v.x, v.y, ts * (0.9 + 0.5 * k)); gl.addColorStop(0, 'rgba(255,205,70,' + (0.45 * g) + ')'); gl.addColorStop(1, 'rgba(255,205,70,0)')
+					ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(v.x, v.y, ts * (0.9 + 0.5 * k), 0, TAU); ctx.fill()
+					const seed = Math.floor(k * 18)
+					for (let i = 0; i < 5; i++) {
+						const r1 = Math.sin(seed * 12.9898 + i * 78.233) * 43758.5453, a1 = r1 - Math.floor(r1), r2 = Math.sin(seed * 4.1 + i * 9.7) * 24634.6, a2 = r2 - Math.floor(r2)
+						const sx = v.x + (a1 - 0.5) * ts * 1.0, sy = v.y + (a2 - 0.5) * ts * 1.0, sr = ts * (0.1 + 0.14 * ((seed + i) % 3) / 2)
+						ctx.globalAlpha = 0.9; ctx.fillStyle = '#fff6c8'; ctx.beginPath(); ctx.moveTo(sx, sy - sr); ctx.lineTo(sx + sr * 0.18, sy - sr * 0.18); ctx.lineTo(sx + sr, sy); ctx.lineTo(sx + sr * 0.18, sy + sr * 0.18); ctx.lineTo(sx, sy + sr); ctx.lineTo(sx - sr * 0.18, sy + sr * 0.18); ctx.lineTo(sx - sr, sy); ctx.lineTo(sx - sr * 0.18, sy - sr * 0.18); ctx.closePath(); ctx.fill()
+					}
+					ctx.restore()
+				} else {
+					const fl = v.y + ts * 0.38
+					for (let i = 0; i < 34; i++) {
+						const a = ((i * 2.399) % TAU), sp = ts * (1.2 + 3.4 * (((i * 7) % 11) / 10)), vx = Math.cos(a) * sp * 0.9, vy = -ts * (3 + 4.5 * (((i * 5) % 9) / 8)), G = ts * 12
+						let y = v.y + vy * T + 0.5 * G * T * T
+						if (y > fl) y = fl - (y - fl) * 0.4
+						if (T > 0.9) y = Math.min(y, fl)
+						const x = v.x + vx * T * (1 - 0.25 * T), spin = T * (9 + (i % 5) * 2), w = ts * 0.2 * Math.abs(Math.cos(spin + i)), h = ts * 0.2
+						ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, (1 - k) * 4))
+						ctx.fillStyle = '#ffc933'; ctx.strokeStyle = '#a8740f'; ctx.lineWidth = Math.max(1, ts * 0.025)
+						ctx.beginPath(); ctx.ellipse(x, y, Math.max(0.6, w), h, 0, 0, TAU); ctx.fill(); ctx.stroke()
+						ctx.fillStyle = 'rgba(255,246,190,0.8)'; ctx.beginPath(); ctx.ellipse(x - w * 0.2, y - h * 0.2, Math.max(0.3, w * 0.35), h * 0.4, 0, 0, TAU); ctx.fill()
+						ctx.restore()
+					}
+				}
 				break
 			}
 			case 'glitch': {
@@ -318,18 +359,36 @@
 					ctx.translate((rnd(i) - 0.5) * ts * 0.5 * Math.min(1, k * 3), 0)
 					drawPiece(v.img, 0, 0, sz, out * flick); ctx.restore()
 				}
+				ctx.save(); ctx.globalCompositeOperation = 'lighter'
+				const sy = -ts * 0.6 + ((k * 2.6) % 1) * ts * 1.2
+				ctx.globalAlpha = 0.5 * out * flick; ctx.fillStyle = '#7af7ff'; ctx.fillRect(-ts * 0.6, sy, ts * 1.2, ts * 0.06)
+				for (let i = 0; i < 3; i++) { ctx.globalAlpha = 0.85 * out * flick; ctx.fillStyle = ['#38f5ff', '#ff3ad0', '#ffffff'][i]; ctx.fillRect((rnd(20 + i) - 0.5) * ts * 1.0, (rnd(30 + i) - 0.5) * ts * 0.9, ts * (0.1 + 0.14 * rnd(40 + i)), ts * 0.04) }
+				ctx.restore()
 				break
 			}
-			case 'launch': {
-				const u = Math.min(1, k / 0.6), up = ts * 5.2 * u * u * u + ts * 0.3 * u
-				ctx.globalAlpha = k < 0.6 ? 1 : Math.max(0, 1 - (k - 0.6) / 0.15)
-				ctx.translate(v.x, v.y - up)
-				if (k < 0.62) {
-					const fl = ts * (0.5 + 0.6 * u) * (0.8 + 0.2 * Math.sin(k * 80)), gr = ctx.createLinearGradient(0, ts * 0.3, 0, ts * 0.3 + fl)
-					gr.addColorStop(0, 'rgba(255,240,170,0.95)'); gr.addColorStop(0.5, 'rgba(255,140,40,0.8)'); gr.addColorStop(1, 'rgba(255,60,20,0)')
-					ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(-ts * 0.22, ts * 0.3); ctx.lineTo(ts * 0.22, ts * 0.3); ctx.lineTo(0, ts * 0.3 + fl); ctx.closePath(); ctx.fill()
+			case 'launch': {          // a toy rocket: rumbles, lifts off with a smoke trail and a big flame
+				const u = Math.max(0, Math.min(1, (k - 0.14) / 0.5)), upAt = (t) => ts * 5.8 * Math.pow(t, 2.1), fade = k < 0.62 ? 1 : Math.max(0, 1 - (k - 0.62) / 0.06)
+				if (u > 0) for (let j = 14; j >= 1; j--) {
+					const tj = u - j * 0.04
+					if (tj <= 0) continue
+					const r = ts * (0.1 + 0.3 * j / 14), age = j / 14
+					ctx.save(); ctx.globalAlpha = 0.45 * (1 - age) * Math.min(1, (1 - k) * 3)
+					ctx.fillStyle = j % 2 ? '#e8e8ee' : '#b9bcc8'; ctx.beginPath(); ctx.arc(v.x + Math.sin(j * 2.1) * ts * 0.12, v.y - upAt(tj) + ts * 0.35, r, 0, TAU); ctx.fill(); ctx.restore()
 				}
-				ctx.scale(1 - 0.25 * u, 1 + 0.5 * u); drawPiece(v.img, 0, 0, sz, 1)
+				if (fade <= 0) break
+				const sh = k < 0.14 ? Math.sin(k * 260) * ts * 0.035 : 0
+				ctx.globalAlpha = fade; ctx.translate(v.x + sh, v.y - upAt(u))
+				if (k > 0.1) {
+					const fl = ts * (0.7 + 1.3 * u) * (0.8 + 0.2 * Math.sin(k * 90)), gr = ctx.createLinearGradient(0, ts * 0.45, 0, ts * 0.45 + fl)
+					gr.addColorStop(0, 'rgba(255,250,200,1)'); gr.addColorStop(0.35, 'rgba(255,170,50,0.9)'); gr.addColorStop(1, 'rgba(255,60,20,0)')
+					ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(-ts * 0.3, ts * 0.45); ctx.quadraticCurveTo(0, ts * 0.45 + fl * 1.1, ts * 0.3, ts * 0.45); ctx.closePath(); ctx.fill()
+				}
+				ctx.save(); ctx.scale(1 - 0.12 * u, 1 + 0.3 * u)
+				drawPiece(v.img, 0, 0, sz, 1)
+				ctx.restore()
+				ctx.fillStyle = '#ff4f4f'; ctx.strokeStyle = '#7a1414'; ctx.lineWidth = Math.max(1, ts * 0.03)
+				ctx.beginPath(); ctx.moveTo(-ts * 0.26, -ts * 0.5); ctx.lineTo(0, -ts * 1.05); ctx.lineTo(ts * 0.26, -ts * 0.5); ctx.closePath(); ctx.fill(); ctx.stroke()
+				for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sd * ts * 0.4, ts * 0.1); ctx.lineTo(sd * ts * 0.68, ts * 0.58); ctx.lineTo(sd * ts * 0.4, ts * 0.45); ctx.closePath(); ctx.fill(); ctx.stroke() }
 				break
 			}
 			case 'ghost': {

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lishogi FX
 // @namespace    https://github.com/Saibrix/lishogi-fx
-// @version      0.2.0
+// @version      0.3.0
 // @description  Random capture effects on lishogi (cosmetic only: no sounds, no hints, never touches the game)
 // @match        https://lishogi.org/*
 // @grant        none
@@ -71,7 +71,7 @@
 
 	// ---- the effects (from Hex Chaos; only those that leave the moving piece alone) ----
 	const LEAD = 0.1          // seconds the effect is brought forward (raise it if it still feels late)
-	const STYLES = ['classic', 'flick', 'vortex', 'balloon', 'frost', 'confetti', 'abduct', 'zap', 'inferno', 'midas', 'glitch', 'rocket', 'ghost']
+	const STYLES = ['classic', 'flick', 'vortex', 'balloon', 'frost', 'confetti', 'abduct', 'zap', 'inferno', 'midas', 'glitch', 'rocket', 'ghost', 'sakura', 'bubble', 'warp']
 	function impact(p, sq, img, victimColor, moverColor, moverRole, dir) {
 		layer(); size()
 		const ts = sq * 0.58, col = SIDE[victimColor] || '#ffcf73', tcol = SIDE[moverColor] || '#ffffff'
@@ -168,6 +168,26 @@
 				V({ mode: 'ghost', life: 1.5 })
 				flashes.push({ x: p[0], y: p[1], t: 0, life: 0.4, r: ts * 1.2, col: '#cfe0ff' })
 				for (let i = 0; i < 10; i++) parts.push({ x: p[0] + rr(-0.4, 0.4) * ts, y: p[1] + rr(-0.2, 0.4) * ts, vx: rr(-0.3, 0.3) * ts, vy: -rr(0.6, 1.8) * ts, life: rr(0.8, 1.4), max: 1.4, col: '#dfe9ff', s: ts * rr(0.04, 0.08), k: 0, g: 0, rot: 0, sp: 0 })
+				break
+			case 'sakura':
+				V({ mode: 'fade', life: 0.3 })
+				flashes.push({ x: p[0], y: p[1], t: 0, life: 0.3, r: ts * 1.2, col: '#ffc4d8' })
+				for (let i = 0; i < 40; i++) parts.push({ x: p[0] + rr(-0.4, 0.4) * ts, y: p[1] + rr(-0.4, 0.3) * ts, vx: rr(-1, 1) * ts * 2.6, vy: rr(-3.2, -0.4) * ts, life: rr(1.1, 1.9), max: 1.9, col: i % 3 ? '#ffb7cf' : '#ffe3ec', s: ts * rr(0.06, 0.1), k: 2, g: ts * 1.6, rot: rr(0, TAU), sp: rr(-8, 8) })
+				break
+			case 'bubble':
+				V({ mode: 'bubble', life: 1.3 })
+				flashes.push({ x: p[0], y: p[1], t: 0, life: 0.25, r: ts * 0.9, col: '#bfe6ff' })
+				setTimeout(() => {
+					const q = [p[0] + Math.sin(0.82 * 8) * ts * 0.1, p[1] - ts * 2.6 * 0.82]
+					for (let i = 0; i < 16; i++) particle(q, i % 2 ? '#dff3ff' : '#ffffff', ts * 2.6, 0.5, ts * 0.07, 1)
+					rings.push({ x: q[0], y: q[1], t: 0, col: '#bfe6ff', max: ts * 1.3, life: 0.4 }); kick()
+				}, 1060)
+				break
+			case 'warp':
+				V({ mode: 'warp', life: 0.55 })
+				flashes.push({ x: p[0], y: p[1], t: 0, life: 0.35, r: ts * 1.5, col: '#7af7ff' })
+				ground('#7af7ff', ts * 1.5, 0.5)
+				for (let i = 0; i < 18; i++) parts.push({ x: p[0] + rr(-0.45, 0.45) * ts, y: p[1] + rr(-0.3, 0.4) * ts, vx: 0, vy: -rr(4, 9) * ts, life: rr(0.3, 0.55), max: 0.55, col: i % 3 ? '#7af7ff' : '#ffffff', s: ts * 0.06, k: 1, g: 0, rot: 0, sp: 0 })
 				break
 			default: {          // classic: knocked away, shockwave, sparks and a burst that fits the taking piece
 				const side = Math.random() < 0.5 ? -1 : 1
@@ -308,6 +328,26 @@
 				ctx.fillStyle = '#10131f'; ctx.globalAlpha = al * 0.9
 				for (const ex of [-0.12, 0.12]) { ctx.beginPath(); ctx.ellipse(ex * ts, -ts * 0.08, ts * 0.045, ts * 0.075, 0, 0, TAU); ctx.fill() }
 				ctx.beginPath(); ctx.ellipse(0, ts * 0.1, ts * 0.05, ts * 0.07, 0, 0, TAU); ctx.fill()
+				break
+			}
+			case 'bubble': {
+				const x = v.x + Math.sin(k * 8) * ts * 0.1, y = v.y - ts * 2.6 * k, pop = k > 0.82
+				ctx.translate(x, y); ctx.scale(0.9, 0.9)
+				drawPiece(v.img, 0, 0, sz, pop ? Math.max(0, 1 - (k - 0.82) / 0.1) : 1)
+				if (!pop) {
+					const r = ts * 0.68, gr = ctx.createRadialGradient(-r * 0.3, -r * 0.35, r * 0.1, 0, 0, r)
+					gr.addColorStop(0, 'rgba(255,255,255,0.45)'); gr.addColorStop(0.7, 'rgba(170,220,255,0.15)'); gr.addColorStop(1, 'rgba(170,220,255,0.4)')
+					ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill()
+					ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = Math.max(1, ts * 0.03); ctx.stroke()
+					ctx.beginPath(); ctx.arc(0, 0, r * 0.78, 3.6, 4.4); ctx.stroke()
+				}
+				break
+			}
+			case 'warp': {
+				const sx = Math.max(0.04, 1 - 1.9 * k), sy = 1 + 3.2 * k, w = ts * 0.2 * (1 - k), gr = ctx.createLinearGradient(0, v.y - ts * 7, 0, v.y + ts * 0.5)
+				gr.addColorStop(0, 'rgba(122,247,255,0)'); gr.addColorStop(0.7, 'rgba(200,255,255,0.8)'); gr.addColorStop(1, 'rgba(122,247,255,0)')
+				ctx.fillStyle = gr; ctx.fillRect(v.x - w, v.y - ts * 7, w * 2, ts * 7.5)
+				ctx.translate(v.x, v.y); ctx.scale(sx, sy); drawPiece(v.img, 0, 0, sz, 1 - k * k)
 				break
 			}
 			case 'ash': ctx.translate(v.x, v.y); ctx.scale(1 - 0.25 * k, 1 - 0.25 * k); tinted(v.img, sz, '#2a2a33', 1 - k); break

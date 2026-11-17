@@ -30,6 +30,10 @@ READ THIS FIRST when the user wants changes to the lishogi script. Everything ne
   and a MutationObserver on its style puts it back whenever shogiground rewrites the transform. Speed from the translate X, smoothed, with a dead zone
   (SWING.dead px/s) so a calm finger does not wiggle; a damped spring; max SWING.max degrees. Ends on pointerup/touchend (suffix removed).
 
+- Trail (v0.5.0): a piece gliding to its target square (click move, not dragged) has the class `anim` and shogiground rewrites its
+  `translate(X%, Y%) scale(f)` every frame (X/(100f) = column as a float). `trailObs` (attributes, subtree on sg-pieces) records the positions into `trails`;
+  `drawTrail` draws faded copies of the piece (bitmap) + a ribbon (white for sente, blue for gote; gold is invisible on the wood). TRAIL_LIFE = 0.3 s.
+
 ## Effects
 Random from: classic (knock-away + burst by the taker: pawn stomp, lance strike, knight bounce, silver/bishop/horse slice, gold/rook/dragon ram, king royal),
 flick, vortex, balloon, frost, confetti, abduct, zap (only the hit, no lightning from the mover), inferno, midas, glitch, rocket, ghost, sakura, bubble, warp (v0.2.0/0.3.0: poof and pixel removed on the user's wish; the old sink/splat cases are still in the code but not in STYLES).

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lishogi FX
 // @namespace    https://github.com/Saibrix/lishogi-fx
-// @version      0.4.1
+// @version      0.5.0
 // @description  Random capture effects on lishogi (cosmetic only: no sounds, no hints, never touches the game)
 // @match        https://lishogi.org/*
 // @grant        none
@@ -35,6 +35,8 @@
 
 	// ---- the effect layer: one canvas over the whole window, only drawn while something moves ----
 	let cv = null, ctx = null, dpr = 1, raf = 0, last = 0
+	const trails = []          // one per piece that is gliding to its target square: its recent positions
+	const TRAIL_LIFE = 0.3          // seconds a trail point lives
 	const parts = [], rings = [], flashes = [], victims = [], bursts = [], splats = [], zaps = []
 	function layer() {
 		if (cv && cv.isConnected) return
@@ -87,7 +89,7 @@
 		parts.push({ x: p[0], y: p[1], vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: life * rr(0.7, 1), max: life, col, s: sz * rr(0.6, 1.1), k, g, rot: Math.random() * TAU, sp: rr(-10, 10) })
 	}
 	function kick() { if (!raf) { if (cv) cv.style.display = ''; last = performance.now(); raf = requestAnimationFrame(frame) } }
-	function busy() { return parts.length || rings.length || flashes.length || victims.length || bursts.length || splats.length || zaps.length }
+	function busy() { return trails.length || parts.length || rings.length || flashes.length || victims.length || bursts.length || splats.length || zaps.length }
 
 	// ---- the effects (from Hex Chaos; only those that leave the moving piece alone) ----
 	const LEAD = 0.1          // seconds the effect is brought forward (raise it if it still feels late)
@@ -270,6 +272,12 @@
 	function advance(dt) {
 		const step = (arr) => { for (const x of arr) x.t += dt / x.life; for (let i = arr.length - 1; i >= 0; i--) if (arr[i].t >= 1) arr.splice(i, 1) }
 		step(rings); step(flashes); step(bursts); step(splats); step(zaps)
+		for (let i = trails.length - 1; i >= 0; i--) {
+			const tr = trails[i]
+			for (const p of tr.pts) p.a += dt
+			while (tr.pts.length && tr.pts[0].a > TRAIL_LIFE) tr.pts.shift()
+			if (!tr.pts.length && !(tr.el.isConnected && tr.el.classList.contains('anim'))) trails.splice(i, 1)
+		}
 		for (const p of parts) { p.x += p.vx * dt; p.y += p.vy * dt; const k = Math.pow(p.k === 2 ? 0.25 : 0.04, dt); p.vx *= k; p.vy = (p.vy + p.g * dt) * k; p.rot += p.sp * dt; p.life -= dt }
 		for (let i = parts.length - 1; i >= 0; i--) if (parts[i].life <= 0) parts.splice(i, 1)
 		for (const v of victims) { const ts = v.sq * 0.58; v.t += dt / v.life; v.x += v.vx * dt; v.y += v.vy * dt; v.vz -= ts * 17 * dt; v.z = Math.max(0, v.z + v.vz * dt); v.rot += v.vr * dt; if (v.z === 0 && v.vz < 0) v.vz *= -0.3 }
@@ -503,6 +511,7 @@
 			for (const b of s.blobs) { ctx.beginPath(); ctx.ellipse(s.x + b[0] * grow, s.y + b[1] * grow, b[2] * grow, b[2] * 0.6 * grow, 0, 0, TAU); ctx.fill() }
 			ctx.restore()
 		}
+		for (const tr of trails) drawTrail(tr)
 		for (const p of parts) if (p.k === 2) {
 			const age = 1 - p.life / p.max
 			ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.globalAlpha = smooth(age / 0.06) * Math.min(1, (p.life / p.max) * 2.5)
@@ -532,6 +541,22 @@
 			else { const r = p.s * (1.8 + 1.2 * Math.sin(Math.min(1, age * 3) * 1.4)) * (0.5 + 0.5 * left); ctx.drawImage(glowSprite(p.col), p.x - r, p.y - r, r * 2, r * 2) }
 		}
 		ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'
+	}
+	// the trail: faded copies of the piece plus a glowing ribbon that gets thinner towards the tail
+	function drawTrail(tr) {
+		const pts = tr.pts, n = pts.length
+		if (n < 2) return
+		const fadeOf = (p) => Math.pow(Math.max(0, 1 - p.a / TRAIL_LIFE), 1.5)
+		const prev = ctx.globalAlpha
+		for (let i = 0; i < n - 1; i += 2) { const p = pts[i], f = fadeOf(p); if (f > 0.02) drawPiece(tr.img, p.x, p.y, tr.sq * (0.8 + 0.2 * f), 0.4 * f) }
+		ctx.save(); ctx.lineCap = 'round'; ctx.strokeStyle = tr.col          // (normal blending: additive is invisible on the light wood)
+		for (let i = 1; i < n; i++) {
+			const f = fadeOf(pts[i])
+			if (f < 0.02) continue
+			ctx.globalAlpha = 0.5 * f; ctx.lineWidth = tr.sq * 0.4 * f
+			ctx.beginPath(); ctx.moveTo(pts[i - 1].x, pts[i - 1].y); ctx.lineTo(pts[i].x, pts[i].y); ctx.stroke()
+		}
+		ctx.restore(); ctx.globalAlpha = prev
 	}
 	function drawBurst(b) {
 		const k = b.t, fade = smooth(1 - k), out = 1 - Math.pow(1 - k, 3), env = smooth(k / 0.1), ts = (b.ts || 30), x = b.x, y = b.y
@@ -691,8 +716,42 @@
 			impact(p, sq, img, v.color, mover.color, mover.role, dir)
 		}
 	}
+	// a piece gliding to its target square carries the class "anim" and gets a new translate(x%, y%) every frame
+	const trailed = new WeakSet()
+	const trailObs = new MutationObserver((list) => {
+		if (!on) return
+		const piecesEl = list[0].target.closest('sg-pieces')
+		if (!piecesEl) return
+		const rect = piecesEl.getBoundingClientRect()
+		if (!rect.width) return
+		const dm = /d-(\d+)x(\d+)/.exec(wrapOf(piecesEl)?.className || '')
+		const sw = rect.width / (dm ? Number(dm[1]) : 9), sh = rect.height / (dm ? Number(dm[2]) : 9)
+		for (const m of list) {
+			const el = m.target
+			if (!(el instanceof Element) || el.tagName !== 'PIECE' || !el.classList.contains('anim') || el.classList.contains('dragging')) continue
+			const i = pieceInfo(el)
+			const mt = /translate\(\s*(-?[\d.]+)%\s*,\s*(-?[\d.]+)%/.exec(el.style.transform || ''), sc = /scale\(\s*([\d.]+)/.exec(el.style.transform || '')
+			if (!mt || !i.color) continue
+			const f = sc ? Number(sc[1]) || 1 : 1
+			const x = rect.left + (Number(mt[1]) / (100 * f) + 0.5) * sw, y = rect.top + (Number(mt[2]) / (100 * f) + 0.5) * sh
+			let tr = trails.find((t) => t.el === el && t.live)
+			if (!tr) {
+				layer(); size()
+				const img = imgCache.get(`${orient(piecesEl)}|${i.color} ${i.role}`)
+				if (!img) continue
+				tr = { el, img, sq: Math.min(sw, sh), col: i.color === 'gote' ? '#6fb4ff' : '#ffffff', pts: [], live: true }
+				bmp(img, tr.sq)
+				trails.push(tr)
+			}
+			const last = tr.pts[tr.pts.length - 1]
+			if (!last || Math.hypot(x - last.x, y - last.y) > 2) tr.pts.push({ x, y, a: 0 })
+		}
+		for (const t of trails) if (t.live && !t.el.classList.contains('anim')) t.live = false
+		if (trails.length) kick()
+	})
 	const obs = new MutationObserver((list) => {
 		addSwitch()
+		for (const el of document.querySelectorAll('sg-pieces')) if (!trailed.has(el)) { trailed.add(el); trailObs.observe(el, { attributes: true, subtree: true, attributeFilter: ['style', 'class'] }) }
 		const byBoard = new Map()
 		for (const m of list) {
 			const t = m.target
@@ -704,7 +763,7 @@
 		for (const [el, removed] of byBoard) onChange(el, removed)
 	})
 	obs.observe(document.body, { childList: true, subtree: true })
-	for (const el of document.querySelectorAll('sg-pieces')) remember(el)
+	for (const el of document.querySelectorAll('sg-pieces')) { remember(el); trailed.add(el); trailObs.observe(el, { attributes: true, subtree: true, attributeFilter: ['style', 'class'] }) }
 	addSwitch()
 	window.addEventListener('resize', () => { if (cv) size() })
 })()

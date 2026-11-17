@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Lishogi FX
 // @namespace    https://github.com/Saibrix/lishogi-fx
-// @version      0.3.2
+// @version      0.4.0
 // @description  Random capture effects on lishogi (cosmetic only: no sounds, no hints, never touches the game)
 // @match        https://lishogi.org/*
 // @grant        none
@@ -43,12 +43,32 @@
 		document.body.appendChild(cv)
 		ctx = cv.getContext('2d')
 	}
+	// the layer runs at a low resolution (at most 1.25 px per CSS px): glows and sparks look the same, but phones paint far fewer pixels
+	const MAX_DPR = 1.25
 	function size() {
-		dpr = Math.min(window.devicePixelRatio || 1, 2)
+		dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR)
 		const w = Math.round(window.innerWidth * dpr), h = Math.round(window.innerHeight * dpr)
-		if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h }
+		if (cv.width === w && cv.height === h) return
+		cv.width = w; cv.height = h
 		// exactly the visible window (100vh is taller than the window on phones, which stretched the picture)
 		cv.style.width = window.innerWidth + 'px'; cv.style.height = window.innerHeight + 'px'
+	}
+	// piece pictures are SVGs: drawing those scaled every frame is slow (warp/rocket), so each one is turned into a bitmap once
+	const rasters = new WeakMap()
+	function bmp(img, sz, tint) {
+		if (!img || !img.complete || !img.naturalWidth) return null
+		const px = Math.max(1, Math.ceil(sz * dpr)), key = px + '|' + (tint || '')
+		let m = rasters.get(img)
+		if (!m) rasters.set(img, (m = new Map()))
+		let c = m.get(key)
+		if (c) return c
+		if (m.size > 24) m.clear()
+		c = document.createElement('canvas'); c.width = c.height = px
+		const g = c.getContext('2d')
+		if (tint) { const base = bmp(img, sz); if (base) g.drawImage(base, 0, 0); g.globalCompositeOperation = 'source-atop'; g.globalAlpha = 0.65; g.fillStyle = tint; g.fillRect(0, 0, px, px) }
+		else g.drawImage(img, 0, 0, px, px)
+		m.set(key, c)
+		return c
 	}
 	const glow = new Map()
 	function glowSprite(col) {
@@ -66,14 +86,14 @@
 		const a = Math.random() * TAU, sp = speed * rr(0.35, 1)
 		parts.push({ x: p[0], y: p[1], vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: life * rr(0.7, 1), max: life, col, s: sz * rr(0.6, 1.1), k, g, rot: Math.random() * TAU, sp: rr(-10, 10) })
 	}
-	function kick() { if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame) } }
+	function kick() { if (!raf) { if (cv) cv.style.display = ''; last = performance.now(); raf = requestAnimationFrame(frame) } }
 	function busy() { return parts.length || rings.length || flashes.length || victims.length || bursts.length || splats.length || zaps.length }
 
 	// ---- the effects (from Hex Chaos; only those that leave the moving piece alone) ----
 	const LEAD = 0.1          // seconds the effect is brought forward (raise it if it still feels late)
 	const STYLES = ['classic', 'flick', 'vortex', 'balloon', 'frost', 'confetti', 'abduct', 'zap', 'inferno', 'midas', 'glitch', 'rocket', 'ghost', 'sakura', 'bubble', 'warp']
 	function impact(p, sq, img, victimColor, moverColor, moverRole, dir) {
-		layer(); size()
+		layer(); size(); bmp(img, sq)          // (the bitmap is made now, not in the middle of the animation)
 		const ts = sq * 0.58, col = SIDE[victimColor] || '#ffcf73', tcol = SIDE[moverColor] || '#ffffff'
 		const style = STYLES[Math.floor(Math.random() * STYLES.length)]
 		const V = (o) => victims.push(Object.assign({ img, sq, x: p[0], y: p[1], z: 0, vx: 0, vy: 0, vz: 0, rot: 0, vr: 0, t: 0, life: 0.6 }, o))
@@ -177,7 +197,7 @@
 					
 					kick()
 				}, delay)
-				burst(p[0], p[1] - ts * 5.8, 36, 1, 760); burst(p[0] - ts * 1.6, p[1] - ts * 4.8, 18, 0.55, 960); burst(p[0] + ts * 1.7, p[1] - ts * 6.4, 18, 0.55, 1100)
+				burst(p[0], p[1] - ts * 5.8, 28, 1, 760); burst(p[0] - ts * 1.6, p[1] - ts * 4.8, 14, 0.55, 960); burst(p[0] + ts * 1.7, p[1] - ts * 6.4, 14, 0.55, 1100)
 				break
 			case 'ghost':
 				V({ mode: 'ghost', life: 1.5 })
@@ -245,7 +265,7 @@
 		advance(dt)
 		draw()
 		if (busy()) raf = requestAnimationFrame(frame)
-		else ctx.clearRect(0, 0, cv.width, cv.height)
+		else { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); cv.style.display = 'none' }          // (hidden while idle: nothing to composite)
 	}
 	function advance(dt) {
 		const step = (arr) => { for (const x of arr) x.t += dt / x.life; for (let i = arr.length - 1; i >= 0; i--) if (arr[i].t >= 1) arr.splice(i, 1) }
@@ -257,15 +277,14 @@
 	}
 
 	function drawPiece(img, x, y, sz, alpha) {
-		if (!img || !img.complete || !img.naturalWidth) return
-		ctx.save(); ctx.globalAlpha *= Math.max(0, alpha); ctx.drawImage(img, x - sz / 2, y - sz / 2, sz, sz); ctx.restore()
+		const b = bmp(img, sz)
+		if (!b || alpha <= 0) return
+		const a = ctx.globalAlpha; ctx.globalAlpha = a * alpha; ctx.drawImage(b, x - sz / 2, y - sz / 2, sz, sz); ctx.globalAlpha = a
 	}
 	function tinted(img, sz, tint, alpha) {
-		const t = document.createElement('canvas'); t.width = t.height = Math.ceil(sz * dpr)
-		const c = t.getContext('2d')
-		if (img && img.complete && img.naturalWidth) c.drawImage(img, 0, 0, t.width, t.height)
-		c.globalCompositeOperation = 'source-atop'; c.globalAlpha = 0.65; c.fillStyle = tint; c.fillRect(0, 0, t.width, t.height)
-		ctx.save(); ctx.globalAlpha *= alpha; ctx.drawImage(t, -sz / 2, -sz / 2, sz, sz); ctx.restore()
+		const b = bmp(img, sz, tint)
+		if (!b || alpha <= 0) return
+		const a = ctx.globalAlpha; ctx.globalAlpha = a * alpha; ctx.drawImage(b, -sz / 2, -sz / 2, sz, sz); ctx.globalAlpha = a
 	}
 	function drawVictim(v) {
 		const k = Math.min(1, v.t), sz = v.sq, ts = sz * 0.58
@@ -304,7 +323,7 @@
 				break
 			}
 			case 'burn': {
-				const heat = Math.min(1, k / 0.35), fade = k < 0.55 ? 1 : Math.max(0, 1 - (k - 0.55) / 0.45)
+				const heat = Math.round(Math.min(1, k / 0.35) * 6) / 6, fade = k < 0.55 ? 1 : Math.max(0, 1 - (k - 0.55) / 0.45)
 				ctx.translate(v.x + Math.sin(k * 60) * ts * 0.02, v.y - k * ts * 0.1); ctx.scale(1 - 0.2 * k, 1 - 0.3 * k)
 				const c = (a, b) => Math.round(a * 255 * (1 - heat) + b * 255 * heat)
 				tinted(v.img, sz, `rgb(${c(1, 0.12)},${c(0.5, 0.1)},${c(0.1, 0.08)})`, fade)
@@ -564,6 +583,62 @@
 		}
 		ctx.restore()
 	}
+
+	// ---- swing: the piece in the finger tilts a little, its tip trails behind the finger ----
+	// shogiground moves the dragged piece (piece.dragging in sg-board) with transform: translate(Xpx, Ypx) scale(f).
+	// We add a tilt around a point below its middle; an observer puts it back at once whenever shogiground rewrites the transform.
+	const SWING = { max: 13, gain: 0.02, dead: 140, pivot: '28%' }          // degrees at most, degrees per px/s, px/s that are ignored (a calm finger does not wiggle)
+	const SUFFIX = / translateY\(28%\).*$/
+	let sw = null
+	function swingApply(s) {
+		const el = s.el, base = el.style.transform.replace(SUFFIX, '')
+		const want = Math.abs(s.ang) < 0.05 ? base : `${base} translateY(${SWING.pivot}) rotate(${s.ang.toFixed(2)}deg) translateY(-${SWING.pivot})`
+		if (el.style.transform !== want) el.style.transform = want
+	}
+	function swingEnd() {
+		const s = sw
+		sw = null
+		if (!s) return
+		if (s.mo) s.mo.disconnect()
+		if (s.el && s.el.isConnected) s.el.style.transform = s.el.style.transform.replace(SUFFIX, '')
+	}
+	function swingFrame(now) {
+		const s = sw
+		if (!s) return
+		const dt = Math.min(1 / 30, Math.max(1 / 240, (now - s.last) / 1000))
+		s.last = now
+		if (!s.el) {
+			const el = document.querySelector('piece.dragging')
+			if (!el) { if (now - s.start > 3000) { swingEnd(); return } s.raf = requestAnimationFrame(swingFrame); return }
+			s.el = el
+			s.mo = new MutationObserver(() => { if (sw === s && s.shown) swingApply(s) })
+			s.mo.observe(el, { attributes: true, attributeFilter: ['style'] })
+		}
+		if (!s.el.isConnected || !s.el.classList.contains('dragging')) { swingEnd(); return }
+		// shogiground keeps this element and only hides it between drags: wait until it is shown
+		s.shown = getComputedStyle(s.el).display !== 'none'
+		if (!s.shown) { s.x = null; s.v = s.ang = s.vel = 0; if (now - s.start > 3000) { swingEnd(); return } s.raf = requestAnimationFrame(swingFrame); return }
+		const m = /translate\(\s*(-?[\d.]+)px/.exec(s.el.style.transform)
+		const x = m ? Number(m[1]) : s.x
+		if (s.x === null) s.x = x
+		const raw = (x - s.x) / dt
+		s.x = x
+		s.v += (raw - s.v) * (1 - Math.exp(-dt * 14))          // smoothed speed
+		const over = Math.max(0, Math.abs(s.v) - SWING.dead)
+		const target = -Math.sign(s.v) * Math.min(SWING.max, over * SWING.gain)
+		s.vel += (-(s.ang - target) * 320 - s.vel * 20) * dt          // a soft spring: swings a little past, then settles
+		s.ang += s.vel * dt
+		swingApply(s)
+		s.raf = requestAnimationFrame(swingFrame)
+	}
+	function swingStart() {
+		if (!on || sw) return
+		const t = performance.now()
+		sw = { el: null, mo: null, x: null, v: 0, ang: 0, vel: 0, last: t, start: t, raf: 0, shown: false }
+		sw.raf = requestAnimationFrame(swingFrame)
+	}
+	for (const ev of ['pointerdown', 'touchstart', 'mousedown']) window.addEventListener(ev, swingStart, { capture: true, passive: true })
+	for (const ev of ['pointerup', 'pointercancel', 'touchend', 'touchcancel', 'mouseup']) window.addEventListener(ev, swingEnd, { capture: true, passive: true })
 
 	// ---- watching the board ----
 	// shogiground places every piece with transform: translate(x%, y%) (x/100 = column, y/100 = row on screen).

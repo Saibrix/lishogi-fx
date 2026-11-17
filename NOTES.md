@@ -23,6 +23,13 @@ READ THIS FIRST when the user wants changes to the lishogi script. Everything ne
   background-image of every piece kind while it is on the board (`imgCache`, key "orientation|color role"); the removed element has no style any more.
 - Drawing: one fixed canvas over the whole window (z-index 2147483000, pointer-events none), only drawn while effects run.
 
+- Speed (v0.4.0, the user saw lag on rocket/warp): the canvas runs at most at 1.25 px per CSS px (MAX_DPR); piece SVGs are turned into bitmaps once
+  (`bmp()`, also the tinted ones; inferno's heat in 6 steps) because drawing the SVG scaled every frame was the big cost; the canvas is display:none while idle.
+- Swing (v0.4.0): the dragged piece is `piece.dragging` in sg-board, moved with `translate(Xpx, Ypx) scale(f)`. shogiground KEEPS this element and only hides it
+  (display none) between drags. We append ` translateY(28%) rotate(Ndeg) translateY(-28%)` (tilt around a point below the middle) from our own rAF loop,
+  and a MutationObserver on its style puts it back whenever shogiground rewrites the transform. Speed from the translate X, smoothed, with a dead zone
+  (SWING.dead px/s) so a calm finger does not wiggle; a damped spring; max SWING.max degrees. Ends on pointerup/touchend (suffix removed).
+
 ## Effects
 Random from: classic (knock-away + burst by the taker: pawn stomp, lance strike, knight bounce, silver/bishop/horse slice, gold/rook/dragon ram, king royal),
 flick, vortex, balloon, frost, confetti, abduct, zap (only the hit, no lightning from the mover), inferno, midas, glitch, rocket, ghost, sakura, bubble, warp (v0.2.0/0.3.0: poof and pixel removed on the user's wish; the old sink/splat cases are still in the code but not in STYLES).
@@ -33,4 +40,5 @@ Also left out: hit-stop, board shake, board zoom (they would move lishogi's boar
 `node tools/fx_lishogi_test.mjs` (headless Edge, lishogi.org/analysis, plays 7g7f 3c3d Bx2b+, screenshots lfx_*.png in the scratchpad).
 Only the analysis board is used for tests (never real games).
 
+- tools/fx_drag_test.mjs [style]: drags a pawn (calm, fast, still: prints the transform), then a capture with only that style, prints frame times.
 - tools/fx_lishogi_test.mjs: needs puppeteer-core (e.g. run it with the node_modules of another project, or npm i puppeteer-core here).

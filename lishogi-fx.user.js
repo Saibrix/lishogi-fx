@@ -1,7 +1,7 @@
-// ==UserScript==
+﻿// ==UserScript==
 // @name         Lishogi FX
 // @namespace    https://github.com/Saibrix/lishogi-fx
-// @version      0.5.1
+// @version      0.5.2
 // @description  Random capture effects on lishogi (cosmetic only: no sounds, no hints, never touches the game)
 // @match        https://lishogi.org/*
 // @grant        none
@@ -548,17 +548,17 @@
 		if (n < 2) return
 		const fadeOf = (p) => Math.pow(Math.max(0, 1 - p.a / TRAIL_LIFE), 1.5)
 		const prev = ctx.globalAlpha
-		// the trail must stay BEHIND the piece: skip everything close to the head, where it would cover the real piece
-		const head = pts[n - 1], far = (p, k) => Math.hypot(p.x - head.x, p.y - head.y) > tr.sq * k
-		for (let i = 0; i < n - 1; i += 2) { const p = pts[i], f = fadeOf(p); if (f > 0.02 && far(p, 1)) drawPiece(tr.img, p.x, p.y, tr.sq * (0.8 + 0.2 * f), 0.4 * f) }
-		ctx.save(); ctx.lineCap = 'butt'; ctx.strokeStyle = tr.col          // (normal blending: additive is invisible on the light wood)
+		for (let i = 0; i < n - 1; i += 2) { const p = pts[i], f = fadeOf(p); if (f > 0.02) drawPiece(tr.img, p.x, p.y, tr.sq * (0.8 + 0.2 * f), 0.4 * f) }
+		ctx.save(); ctx.lineCap = 'round'; ctx.strokeStyle = tr.col          // (normal blending: additive is invisible on the light wood)
 		for (let i = 1; i < n; i++) {
 			const f = fadeOf(pts[i])
-			if (f < 0.02 || !far(pts[i], 0.6)) continue
+			if (f < 0.02) continue
 			ctx.globalAlpha = 0.5 * f; ctx.lineWidth = tr.sq * 0.4 * f
 			ctx.beginPath(); ctx.moveTo(pts[i - 1].x, pts[i - 1].y); ctx.lineTo(pts[i].x, pts[i].y); ctx.stroke()
 		}
 		ctx.restore(); ctx.globalAlpha = prev
+		// the real piece is under this canvas, so paint it again on top of the trail: the piece stays in front
+		if (tr.live) { const h = pts[n - 1]; drawPiece(tr.img, h.x, h.y, tr.sq, 1) }
 	}
 	function drawBurst(b) {
 		const k = b.t, fade = smooth(1 - k), out = 1 - Math.pow(1 - k, 3), env = smooth(k / 0.1), ts = (b.ts || 30), x = b.x, y = b.y
